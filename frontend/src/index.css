@@ -1,0 +1,214 @@
+/* Ontology Mapper v2.7 – Light Theme · IBM Plex design system */
+:root {
+  --bg: #f4f8f9;
+  --bg-panel: #ffffff;
+  --bg-card: #f9fbfb;
+  --bg-hover: #eef5f4;
+  --border: #d2dfe2;
+  --border-bright: #8a9ea6;
+  --text: #1e2d33;
+  --text-dim: #4a5e66;
+  --text-muted: #8a9ea6;
+  --accent: #1f8da6;
+  --accent-dim: #167a91;
+  --accent-glow: rgba(31, 141, 166, 0.12);
+  --green: #32A88B;
+  --orange: #d48c1a;
+  --red: #c94052;
+  --purple: #a8326a;
+  --radius: 6px;
+  --radius-lg: 10px;
+  --font: 'IBM Plex Sans', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow: hidden;
+  height: 100vh;
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: #b8cdd2; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
+
+/* Buttons */
+button {
+  font-family: var(--font);
+  font-size: 12px;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  border-radius: var(--radius);
+  transition: all 0.15s ease;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+  padding: 6px 14px;
+  font-weight: 500;
+}
+.btn-primary:hover { background: #1a7a91; }
+
+.btn-secondary {
+  background: var(--bg-panel);
+  color: var(--text);
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { background: var(--bg-hover); border-color: var(--border-bright); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-dim);
+  padding: 4px 8px;
+}
+.btn-ghost:hover { color: var(--text); background: var(--bg-hover); }
+
+.btn-danger {
+  background: transparent;
+  color: var(--red);
+  padding: 4px 8px;
+}
+.btn-danger:hover { background: rgba(201, 64, 82, 0.08); }
+
+/* Inputs */
+input, select {
+  font-family: var(--font);
+  font-size: 12px;
+  background: #ffffff;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+input:focus, select:focus { border-color: var(--accent); }
+input::placeholder { color: var(--text-muted); }
+
+/* Tags / Pills */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.tag.accent { background: var(--accent-glow); border-color: rgba(31,141,166,0.3); color: var(--accent); }
+.tag.green { background: rgba(50, 168, 139, 0.08); border-color: rgba(50,168,139,0.25); color: var(--green); }
+.tag.orange { background: rgba(212,140,26,0.08); border-color: rgba(212,140,26,0.25); color: var(--orange); }
+
+/* Drag items */
+.draggable-item {
+  cursor: grab;
+  user-select: none;
+  transition: all 0.15s;
+}
+.draggable-item:active { cursor: grabbing; }
+.draggable-item:hover { transform: translateX(2px); }
+
+/* Panels */
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* Toast notifications */
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 9999;
+}
+
+.toast {
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  border: 1px solid;
+  animation: slideIn 0.2s ease;
+  max-width: 320px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.toast.success { background: rgba(50,168,139,0.1); border-color: rgba(50,168,139,0.3); color: var(--green); }
+.toast.error { background: rgba(201,64,82,0.1); border-color: rgba(201,64,82,0.3); color: var(--red); }
+.toast.info { background: var(--accent-glow); border-color: rgba(31,141,166,0.3); color: var(--accent); }
+
+@keyframes slideIn {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* Spinner for loading states */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.spin { animation: spin 1s linear infinite; }
+
+/* React Flow overrides */
+.react-flow__background { background: var(--bg) !important; }
+.react-flow__controls button {
+  background: var(--bg-panel) !important;
+  border-color: var(--border) !important;
+  color: var(--text-dim) !important;
+  fill: var(--text-dim) !important;
+}
+.react-flow__controls button:hover {
+  background: var(--bg-hover) !important;
+}
+.react-flow__minimap {
+  background: var(--bg-panel) !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* Resize handle */
+.resize-handle {
+  width: 4px;
+  background: var(--border);
+  cursor: col-resize;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.resize-handle:hover { background: var(--accent); }
