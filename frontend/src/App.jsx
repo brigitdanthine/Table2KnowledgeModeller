@@ -59,7 +59,8 @@ function makeEdge(id, source, target, prop, sourceHandle, targetHandle) {
     data: {
       label: prop.label,
       propertyUri: prop.uri,
-      joinColumn: prop.joinColumn || null,
+      joinColumnSource: prop.joinColumnSource || null,
+      joinColumnTarget: prop.joinColumnTarget || null,
     },
     style: EDGE_STYLE,
     markerEnd: EDGE_MARKER,
@@ -110,6 +111,7 @@ function GraphInner({
   idPrefix, setIdPrefix,
   prefixMap, setPrefixMap,
   widening, setWidening,
+  wideningParent, setWideningParent,
 }) {
   const rfInstance   = useReactFlow()
   const rfWrapper    = useRef(null)
@@ -496,7 +498,8 @@ function GraphInner({
           ...e.data,
           label: updatedData.label || e.data?.label,
           propertyUri: updatedData.propertyUri ?? e.data?.propertyUri,
-          joinColumn: updatedData.joinColumn ?? e.data?.joinColumn,
+          joinColumnSource: updatedData.joinColumnSource ?? e.data?.joinColumnSource,
+          joinColumnTarget: updatedData.joinColumnTarget ?? e.data?.joinColumnTarget,
           dotOne: updatedData.dotOne ?? e.data?.dotOne,
           dotOneTarget: updatedData.dotOneTarget ?? e.data?.dotOneTarget,
         },
@@ -690,7 +693,7 @@ function GraphInner({
       handleColumnDrop, handleLabelColumnDrop, handleFocusNode, resolveNodeColor, toast])
 
   const handleSaveProject = () => {
-    const project = { version: 3, idPrefix, prefixMap, widening, namedGraphs, nodes: rfInstance.getNodes(), edges: rfInstance.getEdges() }
+    const project = { version: 4, idPrefix, prefixMap, wideningParent, wideningChild: widening, namedGraphs, nodes: rfInstance.getNodes(), edges: rfInstance.getEdges() }
     downloadText('ontology-mapper-project.json', JSON.stringify(project, null, 2), 'application/json')
     toast.success('Project saved')
   }
@@ -784,7 +787,7 @@ function GraphInner({
       if (!src || !tgt) continue
       const sd = src.data || {}, td = tgt.data || {}
       if (sd.mappedColumn && td.mappedColumn && sd.tableId && td.tableId && sd.tableId !== td.tableId) {
-        if (!e.data?.joinColumn && !sd.joinColumn && !td.joinColumn) {
+        if (!e.data?.joinColumnSource && !e.data?.joinColumnTarget && !e.data?.joinColumn && !sd.joinColumn && !td.joinColumn) {
           issues.push({ type: 'info', node: src.id, msg: `Edge "${e.data?.label}" (${sd.label}→${td.label}): Cross-table without join key — set in property dialog or edge edit` })
         }
       }
@@ -827,10 +830,22 @@ function GraphInner({
         }))
 
         setNodes(restoredNodes)
-        setEdges(project.edges)
+
+        // ── Migrate edges from old joinColumn to joinColumnSource/joinColumnTarget ──
+        const migratedEdges = (project.edges || []).map(e => {
+          if (e.data?.joinColumn && !e.data?.joinColumnSource && !e.data?.joinColumnTarget) {
+            return { ...e, data: { ...e.data, joinColumnTarget: e.data.joinColumn, joinColumn: undefined } }
+          }
+          return e
+        })
+        setEdges(migratedEdges)
+
         if (project.idPrefix !== undefined) setIdPrefix(project.idPrefix)
         if (project.prefixMap) setPrefixMap(project.prefixMap)
-        if (project.widening !== undefined) setWidening(project.widening)
+        // v4: split widening; backward compat with v3 single widening flag
+        if (project.wideningParent !== undefined) setWideningParent(project.wideningParent)
+        if (project.wideningChild !== undefined) setWidening(project.wideningChild)
+        else if (project.widening !== undefined) setWidening(project.widening)
         if (project.namedGraphs) setNamedGraphs(project.namedGraphs)
         // Fix nodeCounter to avoid ID collisions
         const maxId = Math.max(0, ...project.nodes.map(n => parseInt(n.id.replace('n',''))||0))
@@ -923,10 +938,33 @@ function GraphInner({
         <input ref={loadInputRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleLoadFile} />
         <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
         <button
-          onClick={() => setWidening(w => !w)}
-          title={widening ? 'Widening ON: Also offers properties from subclasses' : 'Widening OFF: Only strictly valid properties (RDFS semantics)'}
+          onClick={() => setWideningParent(w => !w)}
+          title={wideningParent ? 'Parent Widening ON: Also offers inherited properties from superclasses' : 'Parent Widening OFF: Only direct properties (no inheritance)'}
           style={{
-            display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, padding: '4px 10px',
+            display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, padding: '4px 8px',
+            borderRadius: 4, cursor: 'pointer', border: '1px solid',
+            background: wideningParent ? 'rgba(91,141,238,0.12)' : 'var(--bg)',
+            borderColor: wideningParent ? 'rgba(91,141,238,0.35)' : 'var(--border)',
+            color: wideningParent ? 'var(--accent)' : 'var(--text-muted)',
+            transition: 'all 0.15s',
+          }}
+        >
+          <ChevronsDownUp size={10} style={{ transform: 'rotate(180deg)' }} />
+          <span>↑ Parent</span>
+          <span style={{
+            fontSize: 8, padding: '0 4px', borderRadius: 3,
+            background: wideningParent ? 'rgba(91,141,238,0.2)' : 'var(--bg-card)',
+            color: wideningParent ? 'var(--accent)' : 'var(--text-muted)',
+            fontWeight: 600,
+          }}>
+            {wideningParent ? 'ON' : 'OFF'}
+          </span>
+        </button>
+        <button
+          onClick={() => setWidening(w => !w)}
+          title={widening ? 'Child Widening ON: Also offers properties from subclasses' : 'Child Widening OFF: No properties from subclasses'}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, padding: '4px 8px',
             borderRadius: 4, cursor: 'pointer', border: '1px solid',
             background: widening ? 'rgba(255,179,0,0.12)' : 'var(--bg)',
             borderColor: widening ? 'rgba(255,179,0,0.35)' : 'var(--border)',
@@ -934,10 +972,10 @@ function GraphInner({
             transition: 'all 0.15s',
           }}
         >
-          <ChevronsDownUp size={11} />
-          <span>Widening</span>
+          <ChevronsDownUp size={10} />
+          <span>↓ Child</span>
           <span style={{
-            fontSize: 9, padding: '0 5px', borderRadius: 3,
+            fontSize: 8, padding: '0 4px', borderRadius: 3,
             background: widening ? 'rgba(255,179,0,0.2)' : 'var(--bg-card)',
             color: widening ? '#d48c1a' : 'var(--text-muted)',
             fontWeight: 600,
@@ -1238,7 +1276,7 @@ function GraphInner({
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <div style={{ width: leftWidth, flexShrink: 0, borderRight: '1px solid var(--border)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: activePanel === PANEL_ONTOLOGY ? 'flex' : 'none', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-            <OntologyPanel widening={widening} />
+            <OntologyPanel widening={widening} wideningParent={wideningParent} />
           </div>
           <div style={{ display: activePanel === PANEL_TABLE ? 'flex' : 'none', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
             <TablePanel onAllRowsUpdate={() => {}} />
@@ -1309,6 +1347,7 @@ function GraphInner({
           onConfirm={handlePropertyChosen}
           onCancel={() => setPendingConnect(null)}
           widening={widening}
+          wideningParent={wideningParent}
         />
       )}
 
@@ -1367,7 +1406,8 @@ export default function App() {
   const [leftWidth,   setLeftWidth]   = useState(280)
   const [tableData,   setTableData]   = useState([])
   const [idPrefix,  setIdPrefix]  = useState('oeai')
-  const [widening, setWidening] = useState(false)
+  const [wideningParent, setWideningParent] = useState(true)
+  const [wideningChild, setWideningChild] = useState(false)
   const [prefixMap, setPrefixMap] = useState({
     'crm':        'http://www.cidoc-crm.org/cidoc-crm/',
     'crmarchaeo': 'http://www.cidoc-crm.org/extensions/crmarchaeo/',
@@ -1410,7 +1450,8 @@ export default function App() {
         leftWidth={leftWidth} onMouseDownResize={onMouseDownResize}
         idPrefix={idPrefix} setIdPrefix={setIdPrefix}
         prefixMap={prefixMap} setPrefixMap={setPrefixMap}
-        widening={widening} setWidening={setWidening}
+        widening={wideningChild} setWidening={setWideningChild}
+        wideningParent={wideningParent} setWideningParent={setWideningParent}
       />
       <ToastContainer toasts={toasts} />
     </ReactFlowProvider>

@@ -25,7 +25,8 @@ function parseHandle(handle, type) {
 export default function EdgeEditModal({ edge, sourceNode, targetNode, onConfirm, onCancel }) {
   const [label, setLabel] = useState(edge.data?.label || edge.label || '')
   const [propertyUri, setPropertyUri] = useState(edge.data?.propertyUri || '')
-  const [joinColumn, setJoinColumn] = useState(edge.data?.joinColumn || '')
+  const [joinColumnSource, setJoinColumnSource] = useState(edge.data?.joinColumnSource || '')
+  const [joinColumnTarget, setJoinColumnTarget] = useState(edge.data?.joinColumnTarget || edge.data?.joinColumn || '')
   const [dotOne, setDotOne] = useState(edge.data?.dotOne || '')
   const [dotOneTarget, setDotOneTarget] = useState(edge.data?.dotOneTarget || '')
   const [srcSide, setSrcSide] = useState(parseHandle(edge.sourceHandle, 'source'))
@@ -38,7 +39,8 @@ export default function EdgeEditModal({ edge, sourceNode, targetNode, onConfirm,
     onConfirm({
       label,
       propertyUri,
-      joinColumn: joinColumn || null,
+      joinColumnSource: joinColumnSource || null,
+      joinColumnTarget: joinColumnTarget || null,
       dotOne: dotOne || null,
       dotOneTarget: dotOneTarget || null,
       sourceHandle: `${srcSide}-s`,
@@ -147,24 +149,27 @@ export default function EdgeEditModal({ edge, sourceNode, targetNode, onConfirm,
             </div>
           </div>
 
-          {/* Join-Key */}
+          {/* Join-Key Source (Domain) */}
           <div>
             <label style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
-              <Link2 size={9} /> Join-Key
+              <Link2 size={9} /> Join-Key Source (Domain)
             </label>
-            <select value={joinColumn} onChange={e => setJoinColumn(e.target.value)}
+            <select value={joinColumnSource} onChange={e => setJoinColumnSource(e.target.value)}
               style={{ width: '100%', fontSize: 10, padding: '5px 8px', fontFamily: 'var(--mono)', background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 4 }}>
               <option value="">(kein – Auto-Detect)</option>
-              {srcCols.length > 0 && (
-                <optgroup label={`${sourceNode?.data?.label} (Domain)`}>
-                  {srcCols.map(c => <option key={`s_${c}`} value={c}>{c}</option>)}
-                </optgroup>
-              )}
-              {tgtCols.length > 0 && (
-                <optgroup label={`${targetNode?.data?.label} (Range)`}>
-                  {tgtCols.map(c => <option key={`t_${c}`} value={c}>{c}</option>)}
-                </optgroup>
-              )}
+              {srcCols.map(c => <option key={`src_${c}`} value={c}>{c}</option>)}
+            </select>
+          </div>
+
+          {/* Join-Key Target (Range) */}
+          <div>
+            <label style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 3 }}>
+              <Link2 size={9} /> Join-Key Target (Range)
+            </label>
+            <select value={joinColumnTarget} onChange={e => setJoinColumnTarget(e.target.value)}
+              style={{ width: '100%', fontSize: 10, padding: '5px 8px', fontFamily: 'var(--mono)', background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 4 }}>
+              <option value="">(kein – Auto-Detect)</option>
+              {tgtCols.map(c => <option key={`tgt_${c}`} value={c}>{c}</option>)}
             </select>
           </div>
 

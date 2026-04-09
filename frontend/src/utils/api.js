@@ -26,8 +26,8 @@ export const api = {
   getClasses: (search = '') =>
     req(`/ontology/classes?search=${encodeURIComponent(search)}`),
 
-  getProperties: (subjectUri, search = '', widening = false) =>
-    req(`/ontology/properties?subject_uri=${encodeURIComponent(subjectUri)}&search=${encodeURIComponent(search)}&widening=${widening}`),
+  getProperties: (subjectUri, search = '', widening = false, inheritance = true) =>
+    req(`/ontology/properties?subject_uri=${encodeURIComponent(subjectUri)}&search=${encodeURIComponent(search)}&widening=${widening}&inheritance=${inheritance}`),
 
   getRange: (subjectUri, propertyUri) =>
     req(`/ontology/range?subject_uri=${encodeURIComponent(subjectUri)}&property_uri=${encodeURIComponent(propertyUri)}`),

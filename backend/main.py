@@ -363,19 +363,21 @@ def get_descendant_uris(uri: str) -> Set[str]:
     return {uri} | ontology_store["_subclasses"].get(uri, set())
 
 
-def get_properties_for_subject(subject_uri: str, widening: bool = False) -> List[dict]:
+def get_properties_for_subject(subject_uri: str, widening: bool = False, inheritance: bool = True) -> List[dict]:
     """
     Return all properties whose domain is compatible with subject_uri.
 
     A property P is compatible if ANY of the following is true:
       1. subject_uri is directly in domain(P)
-      2. An ancestor of subject_uri is in domain(P)   ← inheritance
+      2. An ancestor of subject_uri is in domain(P)   ← inheritance (only if inheritance=True)
       3. A descendant of subject_uri is in domain(P)  ← widening (only if widening=True)
       4. P has no domain restriction at all            ← applies to everything
 
     Standard RDFS semantics = 1 + 2 + 4.
     Widening adds 3: properties defined on subclasses are also offered
     for the superclass, marked with "widened_from".
+    When inheritance=False, path 2 is disabled: only direct and domain-free
+    properties are shown (plus widened ones if widening is on).
     """
     g   = ontology_store["merged"]
     ns  = get_namespaces()
@@ -384,23 +386,34 @@ def get_properties_for_subject(subject_uri: str, widening: bool = False) -> List
 
     # All URIs that "are or represent" the subject in the hierarchy
     subject_ancestors = get_ancestor_uris(subject_uri)
+    subject_ancestors_only = subject_ancestors - {subject_uri}  # strict ancestors (parents)
     subject_descendants = get_descendant_uris(subject_uri) - {subject_uri} if widening else set()
 
     props: Set[str] = set()
     widened_props: Set[str] = set()   # track which ones came via widening
+    inherited_only_props: Set[str] = set()  # track which ones came ONLY via inheritance
 
     for p_uri in ap:
         domains = pd.get(p_uri, set())
         if not domains:
             # No domain restriction → property applies to everything
             props.add(p_uri)
-        elif domains & subject_ancestors:
-            # Intersection: subject or one of its superclasses is in the domain
+        elif subject_uri in domains:
+            # Direct match: subject_uri is explicitly in domain(P)
             props.add(p_uri)
+        elif domains & subject_ancestors_only:
+            # Inherited: an ancestor (parent) of subject is in the domain
+            props.add(p_uri)
+            if not (domains & {subject_uri}):
+                inherited_only_props.add(p_uri)
         elif widening and (domains & subject_descendants):
             # Widening: a descendant of subject is in the domain
             props.add(p_uri)
             widened_props.add(p_uri)
+
+    # If inheritance is disabled, remove properties that were ONLY found via ancestors
+    if not inheritance:
+        props -= inherited_only_props
 
     result = []
     for uri in sorted(props):
@@ -599,10 +612,10 @@ def get_classes(search: Optional[str] = None):
 
 
 @app.get("/ontology/properties")
-def get_properties(subject_uri: str, search: Optional[str] = None, widening: bool = False):
+def get_properties(subject_uri: str, search: Optional[str] = None, widening: bool = False, inheritance: bool = True):
     if not ontology_store["merged"]:
         return {"properties": []}
-    props = get_properties_for_subject(subject_uri, widening=widening)
+    props = get_properties_for_subject(subject_uri, widening=widening, inheritance=inheritance)
     if search:
         sl = search.lower()
         props = [

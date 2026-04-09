@@ -1,5 +1,10 @@
 /**
- * graphml.js – GraphML export + Mapping TSV export  (v5)
+ * graphml.js – GraphML export + Mapping TSV export  (v6)
+ *
+ * Fixes v6:
+ *  - Split joinColumn into joinColumnSource + joinColumnTarget for explicit 2-key joins
+ *  - Backward compat: old edge.data.joinColumn is treated as joinColumnTarget
+ *  - GraphML uses e_join_src + e_join_tgt attributes
  *
  * Fixes v5:
  *  - Issue 1: Case B JOIN deduplicates output rows (same domain+range pair → skip)
@@ -44,7 +49,8 @@ export function exportGraphML(nodes, edges) {
     '  <key id="d_y"            for="node" attr.name="y"               attr.type="double"/>',
     '  <key id="e_label"        for="edge" attr.name="label"           attr.type="string"/>',
     '  <key id="e_uri"          for="edge" attr.name="property_uri"    attr.type="string"/>',
-    '  <key id="e_join"         for="edge" attr.name="join_column"     attr.type="string"/>',
+    '  <key id="e_join_src"     for="edge" attr.name="join_column_source" attr.type="string"/>',
+    '  <key id="e_join_tgt"     for="edge" attr.name="join_column_target" attr.type="string"/>',
     '  <key id="e_dotone"       for="edge" attr.name="dot_one_prop"    attr.type="string"/>',
     '  <key id="e_dotone_uri"   for="edge" attr.name="dot_one_uri"     attr.type="string"/>',
     '  <key id="e_dotone_node"  for="edge" attr.name="dot_one_node_id" attr.type="string"/>',
@@ -122,7 +128,10 @@ export function exportGraphML(nodes, edges) {
     lines.push(`      </data>`)
     lines.push(`      <data key="e_label">${edgeLabel}</data>`)
     lines.push(`      <data key="e_uri">${escXml(d.propertyUri || '')}</data>`)
-    if (d.joinColumn) lines.push(`      <data key="e_join">${escXml(d.joinColumn)}</data>`)
+    if (d.joinColumnSource) lines.push(`      <data key="e_join_src">${escXml(d.joinColumnSource)}</data>`)
+    if (d.joinColumnTarget) lines.push(`      <data key="e_join_tgt">${escXml(d.joinColumnTarget)}</data>`)
+    // Backward compat: old single joinColumn
+    if (!d.joinColumnSource && !d.joinColumnTarget && d.joinColumn) lines.push(`      <data key="e_join_tgt">${escXml(d.joinColumn)}</data>`)
     if (dotOneProp)    lines.push(`      <data key="e_dotone">${escXml(dotOneProp)}</data>`)
     if (dotOnePropUri) lines.push(`      <data key="e_dotone_uri">${escXml(dotOnePropUri)}</data>`)
     if (dotOneNodeId)  lines.push(`      <data key="e_dotone_node">${escXml(dotOneNodeId)}</data>`)
@@ -466,7 +475,8 @@ export function exportMappingTSV(nodes, edges, globalTableData, prefixMap = {}, 
 
     // ── Case Cy: only tgt has column ─────────────────────────────────────────
     if (!srcHasCol && tgtHasCol) {
-      let joinCol = edge.data?.joinColumn || src.data?.joinColumn || null
+      // v2: prefer explicit joinColumnTarget from edge
+      let joinCol = edge.data?.joinColumnTarget || edge.data?.joinColumn || src.data?.joinColumn || null
 
       // Auto-detect: find a tgtRows column that looks like a FK
       if (!joinCol && tgtRows.length > 0) {
@@ -510,12 +520,41 @@ export function exportMappingTSV(nodes, edges, globalTableData, prefixMap = {}, 
 
     // ── Case B: both have columns from different tables ───────────────────────
     //
-    // v1.8: joinColumn now lives on the EDGE (not the node), so each edge
-    //        can have its own join strategy.
-    //        Fallback: also check src.data.joinColumn for backward compat.
-    const edgeJoinCol = edge.data?.joinColumn || src.data?.joinColumn || null
-    if (edgeJoinCol) {
-      const joinCol = edgeJoinCol
+    // v2: joinColumnSource + joinColumnTarget allow explicit 2-key joins.
+    //     Fallback: old single joinColumn, src.data.joinColumn, auto-detect.
+    const edgeJoinSrc = edge.data?.joinColumnSource || null
+    const edgeJoinTgt = edge.data?.joinColumnTarget || edge.data?.joinColumn || src.data?.joinColumn || null
+
+    if (edgeJoinSrc && edgeJoinTgt) {
+      // ── Explicit 2-key join: srcRow[joinSrc] == tgtRow[joinTgt] ──
+      const tgtIndex = {}
+      for (const tRow of tgtRows) {
+        const key = String(tRow[edgeJoinTgt] ?? '')
+        if (!key) continue
+        if (!tgtIndex[key]) tgtIndex[key] = []
+        tgtIndex[key].push(tRow)
+      }
+      const seen = new Set()
+      for (const sRow of srcRows) {
+        const srcKey = String(sRow[edgeJoinSrc] ?? '')
+        for (const tRow of (tgtIndex[srcKey] || [])) {
+          const domainId  = getIdValue(src.data, sRow, idPrefix)
+          const domainLbl = getLabelValue(src.data, sRow)
+          const rangeId   = getIdValue(tgt.data, tRow, idPrefix)
+          const rangeLbl  = getLabelValue(tgt.data, tRow)
+          const pairKey   = `${domainId}|${rangeId}`
+          if (!seen.has(pairKey)) {
+            seen.add(pairKey)
+            push(domainId, domainLbl, rangeId, rangeLbl, srcRows.indexOf(sRow))
+          }
+        }
+      }
+      continue
+    }
+
+    if (edgeJoinTgt && !edgeJoinSrc) {
+      // ── Legacy single-key join: iterate tgtRows, look up domain via joinCol ──
+      const joinCol = edgeJoinTgt
       const seen    = new Set()
       for (const tRow of tgtRows) {
         const rangeId  = getIdValue(tgt.data, tRow, idPrefix)

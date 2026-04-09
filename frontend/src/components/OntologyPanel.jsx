@@ -243,7 +243,7 @@ function HierarchyLine({ label, uri, depth = 0, isCurrent = false }) {
 }
 
 // ── Main OntologyPanel ────────────────────────────────────────────────────────
-export default function OntologyPanel({ onDragStart, widening }) {
+export default function OntologyPanel({ onDragStart, widening, wideningParent = true }) {
   const [ontologies, setOntologies] = useState([])
   const [uploading, setUploading] = useState(false)
   const [backendOk, setBackendOk] = useState(null)
@@ -301,7 +301,7 @@ export default function OntologyPanel({ onDragStart, widening }) {
 
     // Parallel: properties + superclasses + subclasses
     Promise.all([
-      api.getProperties(subject.uri, '', widening),
+      api.getProperties(subject.uri, '', widening, wideningParent),
       api.getSuperclasses(subject.uri),
       api.getSubclasses(subject.uri),
     ]).then(([propsData, superData, subData]) => {
@@ -309,7 +309,7 @@ export default function OntologyPanel({ onDragStart, widening }) {
       setAncestors(superData.superclasses)
       setDescendants(subData.subclasses)
     }).finally(() => setLoadingPredicates(false))
-  }, [subject, widening])
+  }, [subject, widening, wideningParent])
 
   // Load objects when predicate changes
   useEffect(() => {

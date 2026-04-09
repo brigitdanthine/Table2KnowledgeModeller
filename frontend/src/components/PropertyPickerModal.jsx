@@ -2,14 +2,15 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Search, X, GitMerge, ChevronRight, Info, Link2, Waypoints } from 'lucide-react'
 import { api } from '../utils/api.js'
 
-export default function PropertyPickerModal({ sourceNode, targetNode, onConfirm, onCancel, widening }) {
+export default function PropertyPickerModal({ sourceNode, targetNode, onConfirm, onCancel, widening, wideningParent = true }) {
   const [properties, setProperties] = useState([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
   const [customValue, setCustomValue] = useState('')
   const [mode, setMode] = useState('list')
-  const [joinColumn, setJoinColumn] = useState('')
+  const [joinColumnSource, setJoinColumnSource] = useState('')
+  const [joinColumnTarget, setJoinColumnTarget] = useState('')
   const [dotOne, setDotOne] = useState('')
   const [dotOneTarget, setDotOneTarget] = useState('')
   const [infoUri, setInfoUri] = useState(null)
@@ -18,11 +19,11 @@ export default function PropertyPickerModal({ sourceNode, targetNode, onConfirm,
   useEffect(() => {
     if (!sourceNode?.data?.uri) return
     setLoading(true)
-    api.getProperties(sourceNode.data.uri, '', widening)
+    api.getProperties(sourceNode.data.uri, '', widening, wideningParent)
       .then(d => setProperties(d.properties))
       .catch(() => setProperties([]))
       .finally(() => setLoading(false))
-  }, [sourceNode, targetNode, widening])
+  }, [sourceNode, targetNode, widening, wideningParent])
 
   useEffect(() => { setTimeout(() => searchRef.current?.focus(), 50) }, [])
 
@@ -43,7 +44,8 @@ export default function PropertyPickerModal({ sourceNode, targetNode, onConfirm,
     if (!base) return
     onConfirm({
       ...base,
-      joinColumn: joinColumn.trim() || null,
+      joinColumnSource: joinColumnSource.trim() || null,
+      joinColumnTarget: joinColumnTarget.trim() || null,
       dotOne: dotOne.trim() || null,
       dotOneTarget: dotOneTarget.trim() || null,
     })
@@ -120,6 +122,8 @@ export default function PropertyPickerModal({ sourceNode, targetNode, onConfirm,
     )
   }
 
+  const selectStyle = { flex: 1, fontSize: 10, padding: '3px 6px', fontFamily: 'var(--mono)', background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 4 }
+
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       onClick={e => { if (e.target === e.currentTarget) onCancel() }}>
@@ -182,23 +186,23 @@ export default function PropertyPickerModal({ sourceNode, targetNode, onConfirm,
         {/* ── Edge options ── */}
         <div style={{ borderTop: '1px solid var(--border)', padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
 
-          {/* Join-Key per edge */}
+          {/* Join-Key Source (Domain) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Link2 size={10} color="var(--text-muted)" style={{ flexShrink: 0 }} />
-            <span style={{ fontSize: 9, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Join-Key:</span>
-            <select value={joinColumn} onChange={e => setJoinColumn(e.target.value)}
-              style={{ flex: 1, fontSize: 10, padding: '3px 6px', fontFamily: 'var(--mono)', background: 'var(--bg)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 4 }}>
+            <Link2 size={10} color="var(--accent)" style={{ flexShrink: 0 }} />
+            <span style={{ fontSize: 9, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Join Source:</span>
+            <select value={joinColumnSource} onChange={e => setJoinColumnSource(e.target.value)} style={selectStyle}>
               <option value="">(kein – Auto-Detect)</option>
-              {srcCols.length > 0 && (
-                <optgroup label={`${sourceNode?.data?.label} (Domain table)`}>
-                  {srcCols.map(c => <option key={`s_${c}`} value={c}>{c}</option>)}
-                </optgroup>
-              )}
-              {tgtCols.length > 0 && (
-                <optgroup label={`${targetNode?.data?.label} (Range table)`}>
-                  {tgtCols.map(c => <option key={`t_${c}`} value={c}>{c}</option>)}
-                </optgroup>
-              )}
+              {srcCols.map(c => <option key={`src_${c}`} value={c}>{c}</option>)}
+            </select>
+          </div>
+
+          {/* Join-Key Target (Range) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Link2 size={10} color="var(--green)" style={{ flexShrink: 0 }} />
+            <span style={{ fontSize: 9, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Join Target:</span>
+            <select value={joinColumnTarget} onChange={e => setJoinColumnTarget(e.target.value)} style={selectStyle}>
+              <option value="">(kein – Auto-Detect)</option>
+              {tgtCols.map(c => <option key={`tgt_${c}`} value={c}>{c}</option>)}
             </select>
           </div>
 
