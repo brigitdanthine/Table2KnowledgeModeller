@@ -18,12 +18,12 @@
 
 ## What is Table2Knowledge Studio?
 
-Table2Knowledge Studio is a localhost web application that lets you map tabular data (CSV, TSV, Excel) onto RDF/OWL ontologies through an intuitive visual interface. You build a conceptual graph by dragging ontology classes onto a canvas, connect them with properties, assign table columns to nodes, and export the result as RDF — ready for your triplestore.  
+Table2Knowledge Studio is a localhost web application that lets you map tabular data (CSV, TSV, Excel) onto RDF/OWL ontologies through an intuitive visual interface. You build a conceptual graph by dragging ontology classes onto a canvas, connect them with properties, assign table columns to nodes, and export the result as RDF - ready for your triplestore.  
 It was originally developed for archaeological data modelling using CIDOC CRM and its extensions, but works with any **RDF/OWL ontology**.
 
-### Why Table2Knowledge?
+### Why Table2Knowledge Studio?
  
-- **No ontology expertise required** — drag and drop instead of hand-written RDF
+- **No ontology expertise required** — visually map your data instead of a multi-step manual workflow
 - **Works with any RDF/OWL ontology** — optimized for CIDOC CRM and its extensions
 - **Visual graph builder** with automatic property suggestions based on domain/range inference (including dot-one properties and named graphs)
 - **Full table mapping** — Load CSV/TSV/XLSX files, drag column headers onto graph nodes to assign IDs and labels
