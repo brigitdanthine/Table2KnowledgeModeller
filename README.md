@@ -199,7 +199,7 @@ Depending on your [widening settings](#widening-settings), all valid properties 
 
 After you have selected the property, all valid entities for the object/range are displayed. You can search and add them in the same way.
 <p>
-    <img src="docs/images/triple.png" alt="Triple Preview" width="400">
+    <img src="docs/images/triple.png" alt="Triple Preview" width="340">
 </p>
 
 > **Note:** Throughout this guide, we use *Subject* and *Domain* as well as *Object* and *Range* synonymously, as the Triple Explorer reflects both RDF triple terminology and OWL property definitions.
