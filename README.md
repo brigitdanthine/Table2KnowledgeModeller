@@ -182,7 +182,7 @@ Supported types are: `.ttl`, `.rdf`, `.owl`, `.xml`, `.nt` and `.n3`
 You can add more ontologies at any time or remove them by clicking ❌.
 
 <p>
-    <img src="docs/images/loaded_ontologies.png" alt="Ontology panel with loaded ontologies" width="600">
+    <img src="docs/images/loaded_ontologies.png" alt="Ontology panel with loaded ontologies" width="400">
 </p>
 
 ### 2. Explore the Ontologies: Search for Entities, Properties and Connections
