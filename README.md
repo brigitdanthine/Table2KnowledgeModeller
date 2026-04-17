@@ -288,7 +288,7 @@ Click on a named graph entry to highlight its nodes with a colored bounding box 
 To enrich your conceptual graph with your own data, switch to the **Table Panel** ① and load your tables (`.csv`, `.tsv`, `.xls`, `.xlsx`) ②. Your tables will be loaded and the first 10 rows will be shown ③.
  
 <p>
-    <img src="docs/images/load_tables.png" alt="Load Tables" width="800">
+    <img src="docs/images/load_tables.png" alt="Load Tables" width="600">
 </p>
  
 Simply drag and drop the columns onto the respective node. For each node, your table must include a unique ID column and optionally a label column. The general prefix does not need to be included in the cell values — you can specify one general prefix in the [Prefix Manager](#6-prefix-manager).
